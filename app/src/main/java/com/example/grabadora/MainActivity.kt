@@ -2,14 +2,17 @@ package com.example.grabadora
 
 import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.media.MediaPlayer
 import android.media.MediaRecorder
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.documentfile.provider.DocumentFile
 import com.example.grabadora.databinding.ActivityMainBinding
 import java.io.IOException
@@ -23,18 +26,25 @@ class MainActivity : AppCompatActivity() {
     var ruta: Uri? = null
     var grabando: Boolean = false
     var verificarPermisi = false
+    var microfono = false
+    var almacenamiento = false
+    lateinit var LanzarPermisos: ActivityResultLauncher<Array<String>>
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        PreguntarPermiso.launch(Manifest.permission.RECORD_AUDIO)
-        PreguntarPermiso.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        PedirPermisos()
         binding.apply {
             record.setOnClickListener {
 
 
-                SatrtAll()
+                if (!verificarPermisi) {
+
+                } else {
+                    StartAll()
+                }
 
             }
 
@@ -45,7 +55,38 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun SatrtAll() {
+//    val PreguntarPermiso =
+//        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permitido ->
+//            if (permitido) {
+//                Toast.makeText(this, "Permitido", Toast.LENGTH_SHORT).show()
+//            } else {
+//                Toast.makeText(this, "Denegado", Toast.LENGTH_SHORT).show()
+//            }
+//        }
+
+    private fun PedirPermisos() {
+        LanzarPermisos =
+            registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permisos ->
+                microfono = permisos[Manifest.permission.RECORD_AUDIO] ?: microfono
+                almacenamiento =
+                    permisos[Manifest.permission.WRITE_EXTERNAL_STORAGE] ?: almacenamiento
+
+            }
+        MostrarPermisos()
+    }
+
+    private fun MostrarPermisos() {
+        microfono = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.RECORD_AUDIO
+        ) == PackageManager.PERMISSION_GRANTED
+        almacenamiento = ContextCompat.checkSelfPermission(
+            this, Manifest.permission.WRITE_EXTERNAL_STORAGE
+        ) == PackageManager.PERMISSION_GRANTED
+        verificarPermisi = true
+    }
+
+    private fun StartAll() {
         if (ruta == null) {
             MostrarAlmacenamiento()
         } else {
@@ -77,6 +118,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+
 
     private fun IniciarGrabacion() {
         try {
@@ -121,43 +163,6 @@ class MainActivity : AppCompatActivity() {
             Log.e("Grabar", e.toString())
         }
     }
-
-    val PreguntarPermiso =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { permitido ->
-            if (permitido) {
-                Toast.makeText(this, "Permitido", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(this, "Denegado", Toast.LENGTH_SHORT).show()
-            }
-        }
-
-
-//    fun Grabar() {
-//
-//        if (grabacion == null) {
-//            ruta = Environment.getExternalStorageDirectory().absolutePath + "/Gabacion.mp3"
-//            grabacion = MediaRecorder()
-//            grabacion.setAudioSource(MediaRecorder.AudioSource.MIC)
-//            grabacion.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
-//            grabacion.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
-//            grabacion.setOutputFile(ruta.toString())
-//            try {
-//                grabacion.prepare()
-//                grabacion.start()
-//            } catch (e: Exception) {
-//
-//            }
-//            binding.record.setBackgroundResource(R.drawable.recred)
-//            Toast.makeText(this, "Grabando", Toast.LENGTH_SHORT).show()
-//        } else if (grabacion != null) {
-//            grabacion.stop()
-//            grabacion.release()
-//            binding.record.setBackgroundResource(R.drawable.rec)
-//            Toast.makeText(this, "Grabacion finalizada", Toast.LENGTH_SHORT).show()
-//
-//
-//        }
-//    }
 
 
     fun Reproducir() {
